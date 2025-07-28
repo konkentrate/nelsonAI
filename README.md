@@ -4,7 +4,7 @@ This is a simple chat bot for Discord that uses Mistral AI (local LLMs in the fu
 ### Scope
 
 - LLM implementation using configurable Mistral AI (DeepSeek in the future?)
-- Contextual chat history using SQLite database (or other)
+- Contextual chat history using SQLite database
 - Ability to analyze chat history and provide insights
 - Trainable personality
 
@@ -13,4 +13,8 @@ This is a simple chat bot for Discord that uses Mistral AI (local LLMs in the fu
 - Use SQLite for chat history storage locally
 - Use FAISS for vector storage and search of text embeddings
 - Implement a simple filtering / moderation command to trim database
-- 
+
+### TODO
+- Add user-specific memory for personalized requests and general memory / context
+- Other than relevant context messages, also give the last 5-10 messages before prompt, for fluent chatting
+
