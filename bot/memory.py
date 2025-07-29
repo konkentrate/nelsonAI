@@ -4,10 +4,9 @@ import numpy as np
 from datetime import datetime
 from sentence_transformers import SentenceTransformer
 from typing import List, Tuple
-import time
-
 
 class ConversationMemory:
+
     def __init__(self, db_path: str = "conversations.db"):
         print(f"[DEBUG] Initializing ConversationMemory with database: {db_path}")
         self.db_path = db_path
@@ -61,52 +60,34 @@ class ConversationMemory:
         print(f"[DEBUG] FAISS index size: {self.index.ntotal}")
 
     def search_similar_messages(self, query: str, k: int = 4, ignore_bot: bool = False) -> List[Tuple[str, float]]:
-        print(f"[DEBUG] Searching for messages similar to: {query[:50]}... (ignore_bot={ignore_bot})")
-        query_embedding = self.model.encode([query])[0]
+        print(f"[DEBUG] Searching for messages similar to: {query[:50]}...")
 
+        # If index is empty, return empty results
         if self.index is None or self.index.ntotal == 0:
             print("[DEBUG] No messages in index to search")
             return []
 
-        # Start timing the search
-        start_time = time.perf_counter()  # Start timing
+        # Encode query to vector
+        query_embedding = self.model.encode([query])[0]
 
-        # Get k+1 results since the query might be in the database
-        distances, indices = self.index.search(query_embedding.reshape(1, -1), min(k+1, self.index.ntotal))
-
-        elapsed = (time.perf_counter() - start_time) * 1000  # ms
-        print(f"[DEBUG] FAISS search took {elapsed:.2f} ms")
-        print(f"[DEBUG] FAISS found {len(indices[0])} results with indices: {indices[0]}")
+        # Search similar vectors
+        distances, indices = self.index.search(query_embedding.reshape(1, -1), k)
 
         results = []
         with sqlite3.connect(self.db_path) as conn:
             for idx, distance in zip(indices[0], distances[0]):
-                if idx == -1:  # FAISS returns -1 for empty slots
+                if idx == -1:  # Skip invalid indices
                     continue
 
-                # Fetch message and role
                 cursor = conn.execute(
-                    """
-                    SELECT content, author, role, timestamp 
-                    FROM messages 
-                    LIMIT 1 OFFSET ?
-                    """,
+                    "SELECT content, author FROM messages LIMIT 1 OFFSET ?",
                     (int(idx),)
                 )
                 row = cursor.fetchone()
                 if row:
-                    content, author, role, timestamp = row
-                    if ignore_bot and role == "bot":
-                        continue
-                    similarity = 1.0 / (1.0 + float(distance))  # Convert distance to similarity score
-                    results.append((f"{author} ({role}, {timestamp}): {content}", similarity))
-                    print(f"[DEBUG] Found message at index {idx} with similarity {similarity:.3f} (role={role})")
-                else:
-                    print(f"[DEBUG] No message found at index {idx}")
+                    content, author = row
+                    results.append((f"{author}: {content}", float(distance)))
 
-        # Ensure we return only up to `k` results
-        results = results[:k]
-        print(f"[DEBUG] Returning {len(results)} results")
         return results
 
     def load_faiss_index(self):
@@ -131,34 +112,3 @@ class ConversationMemory:
                 print(f"[DEBUG] Loaded {len(embeddings)} embeddings into FAISS index")
             else:
                 print("[DEBUG] No existing embeddings found in database")
-
-    def get_recent_messages(self, limit: int = 10) -> List[dict]:
-        """Retrieve the most recent messages from the database."""
-        print(f"[DEBUG] Retrieving {limit} most recent messages")
-
-        results = []
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                """
-                SELECT content, author, role, timestamp 
-                FROM messages 
-                ORDER BY id DESC 
-                LIMIT ?
-                """,
-                (limit,)
-            )
-
-            rows = cursor.fetchall()
-            for row in rows:
-                content, author, role, timestamp = row
-                results.append({
-                    "author": author,
-                    "role": role,
-                    "content": content,
-                    "timestamp": timestamp
-                })
-
-            print(f"[DEBUG] Retrieved {len(results)} recent messages from database")
-
-        # Return in chronological order (oldest first)
-        return list(reversed(results))
