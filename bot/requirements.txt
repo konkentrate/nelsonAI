@@ -12,6 +12,8 @@ langchain
 langchain-core>=0.1.0
 langgraph
 langchain_huggingface
-#pip install -qU "langchain[mistralai]"
+langchain-deepseek
+langchain-mistralai
+langchain-openai
 
 duckduckgo-search

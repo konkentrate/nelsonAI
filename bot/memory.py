@@ -16,6 +16,7 @@ from sklearn.cluster import KMeans
 import time
 
 class MessageMemory:
+
     def __init__(self, db_path="data/message_history.db", index_path="data/faiss_index"):
         self.db_path = db_path
         self.index_path = index_path
@@ -40,6 +41,7 @@ class MessageMemory:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT,
                 message TEXT,
+                summary TEXT,
                 is_bot BOOLEAN,
                 timestamp TEXT,
                 embedding_id INTEGER
@@ -53,18 +55,46 @@ class MessageMemory:
         else:
             self.index = faiss.IndexFlatL2(self.dimension)
 
-    def save_message(self, user_id, message, is_bot=False):
+    # def summarise_message(self, message, model):
+    #     """Use AI to create a concise summary of a message for quick context understanding."""
+    #     try:
+    #         prompt = (
+    #             "Create an extremely concise summary of this message. "
+    #             "Include only the key information another AI would need to understand the context. "
+    #             "Be as brief as possible while preserving the essential meaning:\n\n"
+    #             f"{message}"
+    #         )
+    #         summary = model.invoke([HumanMessage(content=prompt)]).content
+    #         print(f"[DEBUG] Generated summary: {summary[:80]}")
+    #         return summary
+    #     except Exception as e:
+    #         print(f"[DEBUG] AI summarisation failed: {e}")
+    #         # Fallback to simple truncation if AI summarisation fails
+    #         return message[:200]
+
+    # def _fallback_summarise(self, message):
+    #     """Simple fallback summarisation when AI model is not available."""
+    #     words = message.split()
+    #     if len(words) <= 30:  # If message is already short, use as is
+    #         return message
+    #     return " ".join(words[:30]) + "..."
+
+    def save_message(self, user_id, message, is_bot=False, model=None):
         print(f"[DEBUG] Saving message to DB | user_id: {user_id} | is_bot: {is_bot} | message: {message[:80]}")
         embedding = self.embeddings.embed_query(message)
         embedding_id = self.index.ntotal
+
+        # Deactivated summarisation: just use the whole message as summary
+        summary = message
+
         self.index.add(np.array([embedding], dtype='float32'))
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO messages (user_id, message, is_bot, timestamp, embedding_id) VALUES (?, ?, ?, ?, ?)",
-                (user_id, message, is_bot, datetime.now().isoformat(), embedding_id)
+                "INSERT INTO messages (user_id, message, summary, is_bot, timestamp, embedding_id) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, message, summary, is_bot, datetime.now().isoformat(), embedding_id)
             )
             conn.commit()
-        print(f"[DEBUG] Message saved with embedding_id: {embedding_id}")
+        print(f"[DEBUG] Message saved with embedding_id: {embedding_id} | summary: {summary[:80]}")
         faiss.write_index(self.index, f"{self.index_path}.index")
 
         # Add to short-term memory

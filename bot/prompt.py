@@ -7,7 +7,6 @@ prompt_template = PromptTemplate(
         "Relevant long-term messages:\n{long_term}\n\n"
         "Recent short-term conversation:\n{short_term}\n\n"
         "Current user query:\n{query}\n"
-        "Respond to the user using all available context if it makes sense."
     )
 )
 
