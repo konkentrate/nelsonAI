@@ -3,8 +3,7 @@
 A smart, memory-augmented **Discord chatbot** built using LangChain, SQLite, and the Mistral API.  
 nelsonAI supports **long-term and short-term memory** per user, allowing for fluid, contextual conversations tailored to individual preferences.
 
-> Project is a **work in progress** – expect frequent updates as it becomes smarter and more flexible!
-
+> Project is a **work in progress**
 ---
 
 ## Features
@@ -58,7 +57,7 @@ Once running, invite the bot to your Discord server. It will respond in channels
 
 ## Tech Stack
 
-- **Python 3.10+**
+- **Python 3.11**
 - [LangChain](https://github.com/langchain-ai/langchain) – for chaining LLM calls with memory + RAG
 - [Discord API](https://discordpy.readthedocs.io/en/stable/)
 - [Mistral API](https://mistral.ai/) – fast, efficient open-weight LLMs
@@ -89,12 +88,6 @@ PRs and feedback are welcome! If you'd like to contribute:
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-## Author
-
-Built by [@konkentrate](https://github.com/konkentrate)
 
 ---
 
